@@ -21,7 +21,12 @@
  - : euro = Euro 0.4305
 [*----------------------------------------------------------------------------*)
 
-
+type euro = Euro of float
+type dollar = Dollar of float
+    
+let dollar_to_euro (Dollar d) = Euro (d *. 0.94)
+    
+let euro_to_dollar (Euro e) = Dollar (e *. 1.06)
 
 (*----------------------------------------------------------------------------*]
  Definirajte tip [currency] kot en vsotni tip z konstruktorji za jen, funt
@@ -35,7 +40,15 @@
  - : currency = Pound 0.007
 [*----------------------------------------------------------------------------*)
 
-
+type currency =
+  |Yen of float
+  |Krona of float
+  |Pound of float
+                  
+let to_pound = function
+  |Yen y -> Pound (y *. 0.001)
+  |Krona k -> Pound (k *. 0.07)
+  |Pound p -> Pound p
 
 (*-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=*]
  Želimo uporabljati sezname, ki hranijo tako cela števila kot tudi logične
@@ -57,7 +70,12 @@
  Nato napišite testni primer, ki bi predstavljal "[5; true; false; 7]".
 [*----------------------------------------------------------------------------*)
 
-
+type intbool_list =
+  |Nil
+  |Stevilka of (int * intbool_list)
+  |Boolean of (bool * intbool_list)
+              
+let test = Stevilka(5, Boolean(true, (Boolean(false, Stevilka(7, Nil)))))
 
 (*----------------------------------------------------------------------------*]
  Funkcija [intbool_map f_int f_bool ib_list] preslika vrednosti [ib_list] v nov
@@ -65,22 +83,40 @@
  oz. [f_bool].
 [*----------------------------------------------------------------------------*)
 
-let rec intbool_map = ()
+let rec intbool_map f_int f_bool ib_list = match ib_list with
+  |Nil -> Nil
+  |Stevilka (x, xs) -> Stevilka ((f_int x), (intbool_map f_int f_bool xs))
+  |Boolean (x, xs) -> Boolean ((f_bool x), (intbool_map f_int f_bool xs))
+                        
+let plus2 x = x + 2
+let andfalse b = (b && false)
 
 (*----------------------------------------------------------------------------*]
  Funkcija [intbool_reverse] obrne vrstni red elementov [intbool_list] seznama.
  Funkcija je repno rekurzivna.
 [*----------------------------------------------------------------------------*)
 
-let rec intbool_reverse = ()
-
+let intbool_reverse ib_list = 
+  let rec aux acc = function
+    |Nil -> acc
+    |Stevilka (x, xs) -> aux (Stevilka(x,acc)) xs
+    |Boolean (x, xs) -> aux (Boolean(x,acc)) xs
+  in
+  aux Nil ib_list
+  
 (*----------------------------------------------------------------------------*]
  Funkcija [intbool_separate ib_list] loči vrednosti [ib_list] v par [list]
  seznamov, kjer prvi vsebuje vse celoštevilske vrednosti, drugi pa vse logične
  vrednosti. Funkcija je repno rekurzivna in ohranja vrstni red elementov.
 [*----------------------------------------------------------------------------*)
 
-let rec intbool_separate = ()
+let intbool_separate ib_list =
+  let rec aux acc1 acc2 = function
+    |Nil -> (acc1, acc2)
+    |Stevilka (x, xs) -> aux (x::acc1) acc2 xs
+    |Boolean (x, xs) -> aux acc1 (x::acc2) xs
+  in
+  aux [] [] (intbool_reverse ib_list)
 
 (*-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=*]
  Določeni ste bili za vzdrževalca baze podatkov za svetovno priznano čarodejsko
@@ -98,7 +134,7 @@ let rec intbool_separate = ()
  [specialisation], ki loči med temi zaposlitvami.
 [*----------------------------------------------------------------------------*)
 
-
+type magic = Fire | Frost | Arcane
 
 (*----------------------------------------------------------------------------*]
  Vsak od čarodejev začne kot začetnik, nato na neki točki postane študent,
@@ -108,15 +144,20 @@ let rec intbool_separate = ()
   b.) študent [Student] (in kateri vrsti magije pripada in koliko časa študira),
   c.) zaposlen [Employed] (in vrsto magije in specializacijo).
 
- Nato definirajte zapisni tip [wizard] z poljem za ime in poljem za trenuten
- status.
- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
- # professor;;
- - : wizard = {name = "Matija"; status = Employed (Fire, Teacher)}
-[*----------------------------------------------------------------------------*)
+Nato definirajte zapisni tip [wizard] z poljem za ime in poljem za trenuten
+  status.
+    - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    # professor;;
+- : wizard = {name = "Matija"; status = Employed (Fire, Teacher)}
+  [*----------------------------------------------------------------------------*)
 
-
-
+type status = 
+  |Newbie
+  |Student of (magic * int)
+  |Employed of (magic * string)
+               
+type wizard = Wizard of {name:string; status:status}
+                        
 (*----------------------------------------------------------------------------*]
  Želimo prešteti koliko uporabnikov posamezne od vrst magije imamo na akademiji.
  Definirajte zapisni tip [magic_counter], ki v posameznem polju hrani število
