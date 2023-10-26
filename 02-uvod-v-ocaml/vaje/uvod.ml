@@ -115,7 +115,12 @@ let rec insert x k list = match list with
  - : int list * int list = ([1; 2; 3; 4; 5], [])
 [*----------------------------------------------------------------------------*)
 
-let rec divide = ()
+let rec divide k list = match (k, list) with
+  |(_, []) -> ([],[])
+  |(k, list) when k<=0 -> ([], list)
+  |(k, x::xs) ->
+    let (list1, list2) = divide (k-1) xs in
+    (x::list1, list2)
 
 (*----------------------------------------------------------------------------*]
  Funkcija [rotate n list] seznam zavrti za [n] mest v levo. Predpostavimo, da
@@ -125,7 +130,9 @@ let rec divide = ()
  - : int list = [3; 4; 5; 1; 2]
 [*----------------------------------------------------------------------------*)
 
-let rotate = ()
+let rotate n list =
+  let (l1, l2) = divide n list in
+  l2@l1
 
 (*----------------------------------------------------------------------------*]
  Funkcija [remove x list] iz seznama izbriše vse pojavitve elementa [x].
@@ -134,7 +141,11 @@ let rotate = ()
  - : int list = [2; 3; 2; 3]
 [*----------------------------------------------------------------------------*)
 
-let rec remove = ()
+let rec remove x = function
+  |[] -> []
+  |gl::rep ->
+    if gl = x then remove x rep
+    else gl :: (remove x rep)
 
 (*----------------------------------------------------------------------------*]
  Funkcija [is_palindrome] za dani seznam ugotovi ali predstavlja palindrom.
@@ -146,7 +157,12 @@ let rec remove = ()
  - : bool = false
 [*----------------------------------------------------------------------------*)
 
-let is_palindrome = ()
+let is_palindrome list =
+  let rec obrni = function
+    |[] -> []
+    |x::xs -> (obrni xs) @ [x]
+  in
+  list = obrni list
 
 (*----------------------------------------------------------------------------*]
  Funkcija [max_on_components] sprejme dva seznama in vrne nov seznam, katerega
@@ -157,8 +173,13 @@ let is_palindrome = ()
  - : int list = [5; 4; 3; 3; 4]
 [*----------------------------------------------------------------------------*)
 
-let rec max_on_components = ()
-
+let rec max_on_components l1 l2 = match (l1, l2) with
+  |([],_) -> []
+  |(_, []) -> []
+  |(x::xs, y::ys) ->
+    if x>=y then x::(max_on_components xs ys)
+    else y::(max_on_components xs ys)
+    
 (*----------------------------------------------------------------------------*]
  Funkcija [second_largest] vrne drugo največjo vrednost v seznamu. Pri tem se
  ponovitve elementa štejejo kot ena vrednost. Predpostavimo, da ima seznam vsaj
@@ -169,8 +190,14 @@ let rec max_on_components = ()
  - : int = 10
 [*----------------------------------------------------------------------------*)
 
-let second_largest = ()
-(* This is an OCaml editor.
-   Enter your program here and send it to the toplevel using the "Eval code"
-   button or [Ctrl-e]. *)
-
+let second_largest list = 
+  let rec largest = function
+    |[] -> failwith "prekratek seznam"
+    |[a] -> a
+    |x1::x2::xs ->
+      if x1>=x2 then largest (x1::xs)
+      else largest (x2::xs)
+  in
+  let najvecja = largest list in
+  let zmanjsano = remove najvecja list in
+  largest zmanjsano
