@@ -6,6 +6,9 @@
  poddrevesi. Na tej točki ne predpostavljamo ničesar drugega o obliki dreves.
 [*-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=*)
 
+type 'a drevo =
+  |Prazno
+  |Sestavljeno of ('a * 'a drevo * 'a drevo)
 
 (*----------------------------------------------------------------------------*]
  Definirajmo si testni primer za preizkušanje funkcij v nadaljevanju. Testni
@@ -18,6 +21,9 @@
       0   6   11
 [*----------------------------------------------------------------------------*)
 
+let leaf list = Sestavljeno (list, Prazno, Prazno)
+
+let test_drevo = (Sestavljeno (5, Sestavljeno (2, leaf 0, Prazno), Sestavljeno (7, leaf 6, leaf 11)))
 
 (*----------------------------------------------------------------------------*]
  Funkcija [mirror] vrne prezrcaljeno drevo. Na primeru [test_tree] torej vrne
@@ -33,6 +39,9 @@
  Node (Empty, 2, Node (Empty, 0, Empty)))
 [*----------------------------------------------------------------------------*)
 
+let rec mirror = function
+  | Prazno -> Prazno
+  | Sestavljeno (k, l, d) -> Sestavljeno (k, mirror d, mirror l)
 
 (*----------------------------------------------------------------------------*]
  Funkcija [height] vrne višino oz. globino drevesa, funkcija [size] pa število
@@ -44,6 +53,13 @@
  - : int = 6
 [*----------------------------------------------------------------------------*)
 
+let rec height = function
+  | Prazno -> 0
+  | Sestavljeno (_, l, d) -> 1 + max (height l) (height d)
+
+let rec size = function
+  | Prazno -> 0
+  | Sestavljeno (_, l, d) -> 1 + (size l) + (size d) 
 
 (*----------------------------------------------------------------------------*]
  Funkcija [map_tree f tree] preslika drevo v novo drevo, ki vsebuje podatke
@@ -55,6 +71,9 @@
  Node (Node (Empty, true, Empty), true, Node (Empty, true, Empty)))
 [*----------------------------------------------------------------------------*)
 
+let rec map_tree f = function
+  | Prazno -> Prazno
+  | Sestavljeno (k, l, d) -> Sestavljeno (f k, map_tree f l, map_tree f d)
 
 (*----------------------------------------------------------------------------*]
  Funkcija [list_of_tree] pretvori drevo v seznam. Vrstni red podatkov v seznamu
@@ -64,6 +83,12 @@
  - : int list = [0; 2; 5; 6; 7; 11]
 [*----------------------------------------------------------------------------*)
 
+let rec list_of_tree = function
+  | Prazno -> []
+  | Sestavljeno (k, l, d) ->
+     let levo = list_of_tree l in
+     let desno = list_of_tree d in
+     levo @ [k] @ desno
 
 (*----------------------------------------------------------------------------*]
  Funkcija [is_bst] preveri ali je drevo binarno iskalno drevo (Binary Search 
@@ -76,6 +101,12 @@
  - : bool = false
 [*----------------------------------------------------------------------------*)
 
+let rec po_vrsti = function
+  | [] -> true
+  | [x] -> true
+  | x1::x2::xs -> (x1 <= x2) && po_vrsti (x2::xs)
+
+let is_bst drevo = po_vrsti (list_of_tree drevo)
 
 (*-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=*]
  V nadaljevanju predpostavljamo, da imajo dvojiška drevesa strukturo BST.
@@ -91,6 +122,19 @@
  - : bool = false
 [*----------------------------------------------------------------------------*)
 
+let rec insert x = function
+  | Prazno -> leaf x
+  | Sestavljeno (k, l, d) ->
+     if x = k then Sestavljeno (k, l, d)
+     else if x < k then Sestavljeno (k, insert x l, d)
+     else Sestavljeno (k, l, insert x d)
+
+let rec member x = function
+  | Prazno -> false
+  | Sestavljeno (k, l, d) ->
+     if x = k then true
+     else if x < k then member x l
+     else member x d
 
 (*----------------------------------------------------------------------------*]
  Funkcija [member2] ne privzame, da je drevo bst.
@@ -99,6 +143,11 @@
  funkcije [member2] na drevesu z n vozlišči, ki ima globino log(n). 
 [*----------------------------------------------------------------------------*)
 
+let rec member2 x = function
+  | Prazno -> false
+  | Sestavljeno (k, l, d) ->
+     if x = k then true
+     else (member2 x l) || (member2 x d)
 
 (*----------------------------------------------------------------------------*]
  Funkcija [succ] vrne naslednjika korena danega drevesa, če obstaja. Za drevo
