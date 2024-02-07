@@ -1,69 +1,65 @@
 type 'a drevo =
   | Prazno
-  | Sestavljeno of int * 'a drevo * 'a * 'a drevo
+  | Sestavljeno of 'a drevo * 'a * 'a drevo
 
 let prazna_mnozica = Prazno
 
 let rec velikost drevo =
   match drevo with
   | Prazno -> 0
-  | Sestavljeno (_, levi, _, desni) ->
-      1 + velikost levi + velikost desni
+  | Sestavljeno (l, _, d) ->
+      1 + velikost l + velikost d
 
 let rec visina drevo =
-match drevo with
-| Prazno -> 0
-| Sestavljeno (h, _, _, _) -> h
-
-let sestavljeno (l, x, d) =
-    let h = 1 + max (visina l) (visina d) in
-    Sestavljeno (h, l, x, d)
+  match drevo with
+  | Prazno -> 0
+  | Sestavljeno (l, _, d) -> 1 + max (visina l) (visina d)
 
 let zavrti_levo = function
-| Sestavljeno (_, l, x, Sestavljeno (_, dl, y, dd)) ->
-    sestavljeno (sestavljeno (l, x, dl), y, dd)
+| Sestavljeno (l, x, Sestavljeno (dl, y, dd)) ->
+    Sestavljeno (Sestavljeno (l, x, dl), y, dd)
 | _ -> failwith "Tega drevesa ne morem zavrteti"
 
 let zavrti_desno = function
-| Sestavljeno (_, Sestavljeno (_, ll, y, ld), x, d) ->
-    sestavljeno (ll, y, sestavljeno (ld, x, d))
+| Sestavljeno (Sestavljeno (ll, y, ld), x, d) ->
+    Sestavljeno (ll, y, Sestavljeno (ld, x, d))
 | _ -> failwith "Tega drevesa ne morem zavrteti"
 
 let razlika = function
     | Prazno -> 0
-    | Sestavljeno (_, l, _, d) -> visina l - visina d
+    | Sestavljeno (l, _, d) -> visina l - visina d
 
 let uravnotezi drevo =
 match drevo with
-| Sestavljeno (_, l, x, d) when razlika drevo = 2 && razlika l = 1 ->
+| Sestavljeno (l, x, d) when razlika drevo = 2 && razlika l = 1 ->
     zavrti_desno drevo
-| Sestavljeno (_, l, x, d) when razlika drevo = 2 ->
-    sestavljeno (zavrti_levo l, x, d) |> zavrti_desno
-| Sestavljeno (_, l, x, d) when razlika drevo = -2 && razlika d = -1 ->
+| Sestavljeno (l, x, d) when razlika drevo = 2 ->
+    Sestavljeno (zavrti_levo l, x, d) |> zavrti_desno
+| Sestavljeno (l, x, d) when razlika drevo = -2 && razlika d = -1 ->
     zavrti_levo drevo
-| Sestavljeno (_, l, x, d) when razlika drevo = -2 ->
-    sestavljeno (l, x, zavrti_desno d) |> zavrti_levo
+| Sestavljeno (l, x, d) when razlika drevo = -2 ->
+    Sestavljeno (l, x, zavrti_desno d) |> zavrti_levo
 | _ -> drevo
     
 let rec isci x drevo =
   match drevo with
   | Prazno -> false
-  | Sestavljeno (_, levi, vrednost, desni) ->
+  | Sestavljeno (l, vrednost, d) ->
       if x < vrednost then
-        isci x levi
+        isci x l
       else if x > vrednost then
-        isci x desni
+        isci x d
       else
         true
       
 let rec dodaj x drevo =
   match drevo with
-  | Prazno -> sestavljeno (Prazno, x, Prazno)
-  | Sestavljeno (_, levi, vrednost, desni) ->
+  | Prazno -> Sestavljeno (Prazno, x, Prazno)
+  | Sestavljeno (l, vrednost, d) ->
       if x < vrednost then
-        sestavljeno (dodaj x levi, vrednost, desni) |> uravnotezi
+        Sestavljeno (dodaj x l, vrednost, d) |> uravnotezi
       else if x > vrednost then
-        sestavljeno (levi, vrednost, dodaj x desni) |> uravnotezi
+        Sestavljeno (l, vrednost, dodaj x d) |> uravnotezi
       else
         drevo
 

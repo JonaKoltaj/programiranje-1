@@ -1,23 +1,27 @@
-type stanje = {
-  oznaka : string
-}
+(*
+   Če uporabljate spletno verzijo OCamla, potem uporabite <http://ocaml.besson.link/>,
+   saj na njej pravilno deluje branje iz standardnega vhoda.
+*)
+
+type stanje = { oznaka : string }
 
 type avtomat = {
   stanja : stanje list;
   zacetno_stanje : stanje;
   sprejemna_stanja : stanje list;
-  prehodi : (stanje * char * stanje) list
+  prehodi : (stanje * char * stanje) list;
 }
 
 let preberi_znak avt q chr =
-  let (_, _, q') = List.find (fun (q1, chr', q2) -> q1 = q && chr = chr') avt.prehodi in
+  let _, _, q' =
+    List.find (fun (q1, chr', q2) -> q1 = q && chr = chr') avt.prehodi
+  in
   q'
 
-let s_fold_left f acc s =
-  List.fold_left f acc (List.of_seq (String.to_seq s))
+(* String.fold_left je podprt samo od 4.13 naprej *)
 
-let preberi_niz avt q str =
-  s_fold_left (preberi_znak avt) q str
+let s_fold_left f acc s = s |> String.to_seq |> Seq.fold_left f acc
+let preberi_niz avt q str = s_fold_left (preberi_znak avt) q str
 
 let ali_sprejema_niz avt str =
   let koncno_stanje = preberi_niz avt avt.zacetno_stanje str in
@@ -32,14 +36,18 @@ type stanje_vmesnika =
 type model = {
   avtomat : avtomat;
   stanje_avtomata : stanje;
-  stanje_vmesnika : stanje_vmesnika
+  stanje_vmesnika : stanje_vmesnika;
 }
 
 type msg = PreberiNiz of string | ZamenjajVmesnik of stanje_vmesnika
 
-let update model =
-  function
-  | PreberiNiz str -> { model with stanje_avtomata = preberi_niz model.avtomat model.stanje_avtomata str; stanje_vmesnika = RezultatPrebranegaNiza}
+let update model = function
+  | PreberiNiz str ->
+      {
+        model with
+        stanje_avtomata = preberi_niz model.avtomat model.stanje_avtomata str;
+        stanje_vmesnika = RezultatPrebranegaNiza;
+      }
   | ZamenjajVmesnik stanje_vmesnika -> { model with stanje_vmesnika }
 
 let rec izpisi_moznosti () =
@@ -49,14 +57,20 @@ let rec izpisi_moznosti () =
   match read_line () with
   | "1" -> ZamenjajVmesnik IzpisAvtomata
   | "2" -> ZamenjajVmesnik BranjeNiza
-  | _ -> print_endline "** VNESI 1 ALI 2 **"; izpisi_moznosti ()
+  | _ ->
+      print_endline "** VNESI 1 ALI 2 **";
+      izpisi_moznosti ()
 
 let izpisi_avtomat avtomat =
   print_endline "STANJA:";
-  print_endline ("->(" ^(avtomat.zacetno_stanje.oznaka)^ ")"); (* začetno stanje *)
-  print_endline " ((B))"; (* stanje, ki je sprejemno *)
-  print_endline "  (C)"; (* še eno stanje, ki ni sprejemno *)
-  print_endline " ((D))"; (* in še eno stanje, ki je sprejemno *)
+  print_endline "->(A)";
+  (* začetno stanje *)
+  print_endline " ((B))";
+  (* stanje, ki je sprejemno *)
+  print_endline "  (C)";
+  (* še eno stanje, ki ni sprejemno *)
+  print_endline " ((D))";
+  (* in še eno stanje, ki je sprejemno *)
   print_endline "PREHODI:";
   print_endline "  (A)--[0]->(B)";
   print_endline "  (A)--[1]->(C)";
@@ -88,19 +102,18 @@ let rec main_loop model =
   main_loop model'
 
 let vsebuje_samo_nicle =
-  let ima_enke = { oznaka = "ima 1" }
-  and nima_enk = { oznaka = "nima 1" }
-  in
+  let ima_enke = { oznaka = "ima 1" } and nima_enk = { oznaka = "nima 1" } in
   {
-  stanja = [ima_enke; nima_enk];
-  zacetno_stanje = nima_enk;
-  sprejemna_stanja = [nima_enk];
-  prehodi = [
-    (nima_enk, '0', nima_enk);
-    (nima_enk, '1', ima_enke);
-    (ima_enke, '0', ima_enke);
-    (ima_enke, '1', ima_enke);
-  ]
-}
+    stanja = [ ima_enke; nima_enk ];
+    zacetno_stanje = nima_enk;
+    sprejemna_stanja = [ nima_enk ];
+    prehodi =
+      [
+        (nima_enk, '0', nima_enk);
+        (nima_enk, '1', ima_enke);
+        (ima_enke, '0', ima_enke);
+        (ima_enke, '1', ima_enke);
+      ];
+  }
 
 let _ = main_loop (init vsebuje_samo_nicle)
