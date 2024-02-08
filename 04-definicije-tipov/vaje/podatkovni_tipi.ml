@@ -136,6 +136,8 @@ let intbool_separate ib_list =
 
 type magic = Fire | Frost | Arcane
 
+type specialisation = Historian | Teacher | Researcher
+
 (*----------------------------------------------------------------------------*]
  Vsak od čarodejev začne kot začetnik, nato na neki točki postane študent,
  na koncu pa SE lahko tudi zaposli.
@@ -154,9 +156,9 @@ Nato definirajte zapisni tip [wizard] z poljem za ime in poljem za trenuten
 type status = 
   |Newbie
   |Student of (magic * int)
-  |Employed of (magic * string)
+  |Employed of (magic * specialisation)
                
-type wizard = Wizard of {name:string; status:status}
+type wizard = {name:string ; status:status}
                         
 (*----------------------------------------------------------------------------*]
  Želimo prešteti koliko uporabnikov posamezne od vrst magije imamo na akademiji.
@@ -169,7 +171,12 @@ type wizard = Wizard of {name:string; status:status}
  - : magic_counter = {fire = 1; frost = 1; arcane = 2}
 [*----------------------------------------------------------------------------*)
 
+type magic_counter = {fire:int ; frost:int ; arcane:int}
 
+let update counter = function
+  |Fire -> {counter with fire = counter.fire + 1}
+  |Frost -> {counter with frost = counter.frost + 1}
+  |Arcane -> {counter with arcane = counter.arcane + 1}
 
 (*----------------------------------------------------------------------------*]
  Funkcija [count_magic] sprejme seznam čarodejev in vrne števec uporabnikov
@@ -179,7 +186,16 @@ type wizard = Wizard of {name:string; status:status}
  - : magic_counter = {fire = 3; frost = 0; arcane = 0}
 [*----------------------------------------------------------------------------*)
 
-let rec count_magic = ()
+let count_magic list = 
+  let mc = {fire = 0; frost = 0; arcane = 0} in
+  let rec aux acc = function
+    |[] -> acc
+    |{name; status}::tl -> match status with
+      |Newbie -> aux acc tl
+      |Student (m, _) -> aux (update acc m) tl
+      |Employed (m, _) -> aux (update acc m) tl
+  in
+  aux mc list
 
 (*----------------------------------------------------------------------------*]
  Želimo poiskati primernega kandidata za delovni razpis. Študent lahko postane
@@ -195,4 +211,16 @@ let rec count_magic = ()
  - : string option = Some "Jaina"
 [*----------------------------------------------------------------------------*)
 
-let rec find_candidate = ()
+let rec find_candidate magic spec list = match list with
+  |[] -> None
+  |{name;status}::xs -> match status with
+    |Student (m, i)->
+      if ((m = magic) && (spec = Historian) && (i>=3)) then Some name
+      else if ((m = magic) && (spec = Researcher) && (i>=4)) then Some name
+      else if ((m = magic) && (spec = Teacher) && (i>=5)) then Some name
+      else find_candidate magic spec xs
+    |_ -> find_candidate magic spec xs
+
+let jst = {name = "Jona"; status = Student(Arcane, 3)}
+let jaina = {name = "Jaina"; status = Student (Frost, 4)}
+let professor = {name = "Matija"; status = Employed(Fire, Teacher)}
