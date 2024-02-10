@@ -46,7 +46,13 @@ let update model = function
       {
         model with
         stanje_avtomata = preberi_niz model.avtomat model.stanje_avtomata str;
-        stanje_vmesnika = RezultatPrebranegaNiza;
+        stanje_vmesnika = RezultatPrebranegaNiza
+      }
+  | ZamenjajVmesnik RezultatPrebranegaNiza ->
+      {
+        model with
+        stanje_avtomata = model.avtomat.zacetno_stanje;
+        stanje_vmesnika = SeznamMoznosti
       }
   | ZamenjajVmesnik stanje_vmesnika -> { model with stanje_vmesnika }
 
@@ -63,32 +69,39 @@ let rec izpisi_moznosti () =
 
 let izpisi_avtomat avtomat =
   print_endline "STANJA:";
-  print_endline "->(A)";
-  (* začetno stanje *)
-  print_endline " ((B))";
-  (* stanje, ki je sprejemno *)
-  print_endline "  (C)";
-  (* še eno stanje, ki ni sprejemno *)
-  print_endline " ((D))";
-  (* in še eno stanje, ki je sprejemno *)
+  let izpisi_stanje stanje =
+    let prikaz = "(" ^ stanje.oznaka ^ ")" in
+    let prikaz =
+      if stanje = avtomat.zacetno_stanje then "-> " ^ prikaz else prikaz
+    in
+    let prikaz =
+      if not (List.mem stanje avtomat.sprejemna_stanja) then "(" ^ prikaz ^ ")" else prikaz
+    in
+    print_endline prikaz
+  in
+  List.iter izpisi_stanje avtomat.stanja;
   print_endline "PREHODI:";
-  print_endline "  (A)--[0]->(B)";
-  print_endline "  (A)--[1]->(C)";
-  print_endline "  (A)--[0]->(D)"
+  let izpisi_prehode = function
+    | (s1, a, s2) -> let prikaz = "  (" ^ s1.oznaka ^ ")--[" ^ Char.escaped a ^ "]->(" ^ s2.oznaka ^ ")" in
+    print_endline prikaz
+  in
+  List.iter izpisi_prehode avtomat.prehodi
 
-let beri_niz model =
+let beri_niz () =
   print_string "Vnesi niz > ";
   let str = read_line () in
   PreberiNiz str
 
 let izpisi_rezultat model =
-  print_endline "Ne vem, ali je bil niz sprejet ali ne"
+  if List.mem model.stanje_avtomata model.avtomat.sprejemna_stanja then
+    print_endline "Niz je bil sprejet"
+  else print_endline "Niz ni bil sprejet"
 
 let view model = match model.stanje_vmesnika with
   | IzpisAvtomata -> izpisi_avtomat model.avtomat; ZamenjajVmesnik SeznamMoznosti
   | SeznamMoznosti -> izpisi_moznosti ()
-  | BranjeNiza -> beri_niz model.avtomat
-  | RezultatPrebranegaNiza -> izpisi_rezultat model.avtomat; ZamenjajVmesnik SeznamMoznosti
+  | BranjeNiza -> beri_niz ()
+  | RezultatPrebranegaNiza -> izpisi_rezultat model; ZamenjajVmesnik RezultatPrebranegaNiza
 
 let init avtomat = {
   avtomat = avtomat;
@@ -116,4 +129,4 @@ let vsebuje_samo_nicle =
       ];
   }
 
-let _ = main_loop (init vsebuje_samo_nicle)
+let gremo = main_loop (init vsebuje_samo_nicle)
