@@ -17,7 +17,7 @@ let json_example =
   ("friends", Array [
   Primitive (Int 1);
   Primitive (Int 2);
-  Primitive (String "Nemo")
+  Primitive (Int 3)
   ]);
   ("is_student", Primitive (Bool true));
   ("is_professor", Primitive (Bool false));
@@ -102,15 +102,34 @@ let type_of_primitive = function (* tle mu je pisalo "and" namesto "let" *)
   | Int _ -> "int"
   | String _ -> "string"
   | Null -> "null"
-let same_type_elements = function (* ne rabi posebej preveriti za enega *)
+
+let rec is_primitive = function
   |[] -> true
-  |x::xs -> List.for_all (fun a -> (type_of_primitive a) = (type_of_primitive x)) xs
-let rec je_konsistenten = function
-  | Primitive _ -> true
-  | Object dict -> List.for_all (fun (_, v) -> je_konsistenten v) dict
-  | Array lst -> (match lst with
-    |[] -> true
-    |x::xs -> (match x with
-      |Primitive a -> same_type_elements (x::xs)
-      )
+  |x::xs -> (match x with
+    |Primitive a -> is_primitive xs
+    |_ -> false
     )
+    
+let rec primitives_of_list = function (* predpostavimo da sprejmemo list of primitives *)
+  |[] -> []
+  |x::xs -> (match x with
+    |Primitive a -> a::(primitives_of_list xs)
+    |_ -> [] (* se itak ne zgodi *)
+    )
+
+let same_type_elements list = (* ne rabi posebej preveriti za enega in also ni rekurzivna *)
+  if is_primitive list then
+    let prim_list = primitives_of_list list in
+    match prim_list with
+      |[] -> true
+      |x::xs -> List.for_all (fun a -> (type_of_primitive a) = (type_of_primitive x)) xs
+  else false
+
+let rec je_konsistenten = function
+  |Primitive _ -> true
+  |Object dict -> List.for_all (fun (_, v) -> je_konsistenten v) dict
+  |Array lst -> same_type_elements lst
+let szn_exmpl = [
+  Primitive (Int 1);
+  Primitive (Int 2);
+  Primitive (Int 3)]
