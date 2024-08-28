@@ -56,9 +56,23 @@ let je_veljavno gt =
     |Decision (_,list) ->
       let vsota = List.fold_left (fun fl1 (fl2,_) -> fl1 +. fl2) 0.0 list in
       let je_ena = Float.equal vsota 1.0 in
-      List.fold_left aux (acc && je_ena) list
+      List.fold_left (fun b (fl, tree) -> aux b tree) (acc && je_ena) list
     |_ -> acc
   in
   aux true gt
 
 (* 1. d) *)
+let odigraj_igro gt odlocitve =
+  let rec aux acc_fl acc = function
+    |Winner p -> Some (p, acc_fl)
+    |Tie -> None
+    |Decision (pl,list) -> (match acc with
+      |[] -> None
+      |i::is ->
+        if (List.length list <= i) || (i<0) then None
+        else
+          let (fl, odlocitev) = List.nth list i in
+          aux (fl *. acc_fl) is odlocitev
+      )
+  in
+  aux 1.0 odlocitve gt
